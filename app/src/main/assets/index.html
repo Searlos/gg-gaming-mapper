@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GG Gaming</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100vh;background:#fff;}
+.topbar{height:52px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.topbar-title{font-size:18px;font-weight:600;}
+.topbar-right{position:absolute;right:16px;color:#5c6bc0;font-size:14px;font-weight:600;cursor:pointer;display:none;}
+.topbar-back{position:absolute;left:16px;color:#5c6bc0;font-size:22px;cursor:pointer;display:none;}
+.content{flex:1;overflow:hidden;position:relative;}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column;background:#fff;}
+.page.show{display:flex;}
+.bottomnav{height:58px;background:#fff;border-top:1px solid #e8e8e8;display:flex;flex-shrink:0;}
+.bn-btn-wrap{flex:1;display:flex;align-items:center;justify-content:flex-start;padding-left:12px;}
+.bn-pill{background:#5c6bc0;border-radius:24px;padding:8px 16px;display:flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+.bn-pill:active{opacity:0.8;}
+.bn-icon-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:#aaa;font-size:9px;}
+.bn-icon-item.active{color:#5c6bc0;}
+.bn-ico{font-size:24px;line-height:1;}
+
+/* permissions banner */
+.perm-banner{background:#fff3e0;border-left:4px solid #ff9800;padding:12px 16px;margin:12px 16px;border-radius:8px;display:none;}
+.perm-banner.show{display:block;}
+.perm-title{font-size:13px;font-weight:700;color:#e65100;margin-bottom:4px;}
+.perm-sub{font-size:12px;color:#bf360c;margin-bottom:8px;}
+.perm-btns{display:flex;gap:8px;}
+.perm-btn{padding:6px 14px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;}
+.perm-btn.orange{background:#ff9800;color:#fff;}
+.perm-btn.blue{background:#5c6bc0;color:#fff;}
+
+/* games */
+.games-hd{padding:20px 16px 12px;display:flex;align-items:center;gap:10px;}
+.games-hd h2{font-size:18px;font-weight:700;}
+.add-btn{width:30px;height:30px;border-radius:50%;background:#5c6bc0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:20px;font-weight:300;line-height:1;border:none;}
+.game-row{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f0f0f0;gap:14px;}
+.game-row:active{background:#f8f8f8;}
+.game-ico{width:56px;height:56px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;}
+.game-info{flex:1;}
+.game-name{font-size:16px;font-weight:600;}
+.game-ver{font-size:13px;color:#999;margin-top:2px;}
+.iniciar-btn{background:#5c6bc0;color:#fff;border:none;border-radius:24px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;}
+.iniciar-btn:active{opacity:0.8;transform:scale(0.97);}
+
+/* add game page */
+.app-row{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #f0f0f0;gap:14px;}
+.app-ico{width:48px;height:48px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:#eee;}
+.app-name{flex:1;font-size:15px;font-weight:500;}
+.agregar-btn{background:#5c6bc0;color:#fff;border:none;border-radius:24px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;}
+.agregar-btn.done{background:#81c784;}
+.agregar-btn:active{opacity:0.8;}
+
+/* editor page */
+#pgEditor{background:#000;}
+.editor-bar{position:sticky;top:0;z-index:20;background:rgba(92,107,192,0.95);padding:10px 8px;display:flex;align-items:flex-start;gap:0;overflow-x:auto;scrollbar-width:none;}
+.editor-bar::-webkit-scrollbar{display:none;}
+.eb-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 12px;cursor:pointer;color:#fff;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.2);}
+.eb-item:last-child{border-right:none;}
+.eb-item:active{opacity:0.7;}
+.eb-ico{font-size:20px;line-height:1;}
+.eb-lbl{font-size:9px;font-weight:500;text-align:center;line-height:1.3;}
+.slot-bar{background:rgba(92,107,192,0.85);padding:6px 12px;display:flex;gap:12px;}
+.slot-item{color:#fff;font-size:12px;font-weight:600;padding:4px 10px;background:rgba(255,255,255,0.15);border-radius:6px;}
+.editor-canvas{position:relative;flex:1;min-height:calc(100vh - 130px);background:transparent;}
+.mk{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(92,107,192,0.85);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;cursor:pointer;transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,0.4);touch-action:none;user-select:none;text-align:center;line-height:1.2;}
+.mk.macro{background:rgba(171,71,188,0.85);}
+.mk.selected{outline:3px solid #fff;outline-offset:2px;}
+.mk:active{transform:translate(-50%,-50%) scale(0.88);}
+.mk-del{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;background:#ef5350;color:#fff;font-size:10px;border:2px solid #fff;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.mk.selected .mk-del{display:flex;}
+
+/* add type menu */
+.type-menu{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;}
+.type-menu.show{display:flex;}
+.type-box{background:#fff;border-radius:20px;padding:20px;width:290px;}
+.type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.type-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px 4px;border-radius:10px;}
+.type-item:active{background:#f0f3ff;}
+.ti-ico{width:46px;height:46px;border-radius:50%;border:2px solid #5c6bc0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ti-lbl{font-size:10px;color:#333;text-align:center;line-height:1.3;}
+
+/* profile page */
+.profile-hd{padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:12px;border-bottom:1px solid #f0f0f0;}
+.profile-av{width:72px;height:72px;border-radius:50%;background:#5c6bc0;display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;}
+.profile-name{font-size:17px;font-weight:700;}
+.profile-sub{font-size:12px;color:#999;}
+.prow{display:flex;align-items:center;padding:15px 16px;border-bottom:1px solid #f0f0f0;gap:12px;cursor:pointer;}
+.prow:active{background:#f8f8f8;}
+.prow-ico{font-size:20px;width:30px;text-align:center;}
+.prow-lbl{flex:1;font-size:15px;font-weight:500;}
+.prow-val{font-size:13px;color:#5c6bc0;font-weight:600;}
+.prow-arr{color:#ccc;font-size:18px;}
+
+/* config page */
+.cfg-section{margin-bottom:0;}
+.cfg-title{padding:14px 16px 6px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#999;text-transform:uppercase;background:#f5f5f5;}
+.cfg-row{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f0f0f0;background:#fff;gap:12px;}
+.cfg-row:active{background:#f8f8f8;}
+.cfg-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.cfg-ico.blue{background:#e8eaf6;}
+.cfg-ico.green{background:#e8f5e9;}
+.cfg-ico.orange{background:#fff3e0;}
+.cfg-ico.purple{background:#f3e5f5;}
+.cfg-lbl{flex:1;}
+.cfg-name{font-size:14px;font-weight:500;}
+.cfg-sub{font-size:11px;color:#999;margin-top:1px;}
+.cfg-val{font-size:13px;color:#5c6bc0;font-weight:600;}
+.cfg-arr{color:#ddd;font-size:18px;}
+.tog{width:44px;height:24px;border-radius:12px;background:#ddd;position:relative;cursor:pointer;border:none;transition:background 0.2s;flex-shrink:0;}
+.tog.on{background:#5c6bc0;}
+.tog::after{content:'';position:absolute;width:18px;height:18px;border-radius:9px;background:#fff;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+.tog.on::after{left:23px;}
+input[type=range]{width:90px;height:3px;appearance:none;background:#ddd;border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#5c6bc0;cursor:pointer;}
+
+/* key modal */
+.key-modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.6);display:none;align-items:flex-end;justify-content:center;}
+.key-modal.show{display:flex;}
+.km-box{background:#fff;border-radius:20px 20px 0 0;padding:22px 20px 30px;width:100%;}
+.km-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 14px;}
+.km-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px;}
+.km-sub{font-size:12px;color:#999;text-align:center;margin-bottom:18px;}
+.km-key{width:76px;height:76px;border-radius:14px;border:2px solid #5c6bc0;background:#f0f3ff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#5c6bc0;margin:0 auto 18px;}
+.km-btns{display:flex;gap:10px;}
+.km-btn{flex:1;padding:12px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;}
+.km-btn.ok{background:#5c6bc0;color:#fff;}
+.km-btn.no{background:#f5f5f5;color:#555;}
+
+/* config blue modal */
+.blue-modal{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;}
+.blue-modal.show{display:flex;}
+.blue-box{background:rgba(92,107,192,0.97);border-radius:16px;width:85%;max-width:360px;overflow:hidden;position:relative;}
+.blue-title{text-align:center;color:#fff;font-size:17px;font-weight:600;padding:18px;}
+.blue-item{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-top:1px solid rgba(255,255,255,0.15);cursor:pointer;color:#fff;font-size:14px;}
+.blue-item:active{background:rgba(255,255,255,0.1);}
+.blue-arr{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.blue-close{position:absolute;top:-14px;right:-14px;width:34px;height:34px;border-radius:50%;background:#ef5350;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;cursor:pointer;}
+
+/* toast */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-10px);opacity:0;background:rgba(50,50,50,0.92);color:#fff;border-radius:22px;padding:10px 20px;font-size:13px;font-weight:500;z-index:500;transition:all 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar" id="topbar">
+    <span class="topbar-back" id="topBack" onclick="goBack()">‹</span>
+    <span class="topbar-title" id="topTitle">GG Gaming</span>
+    <span class="topbar-right" id="topRight" onclick="topRightAct()">Listo</span>
+  </div>
+  <div class="content">
+
+    <!-- MIS JUEGOS -->
+    <div class="page show" id="pgGames">
+      <div class="perm-banner" id="permBanner">
+        <div class="perm-title">⚠️ Permisos necesarios</div>
+        <div class="perm-sub" id="permMsg">Necesitas dar permisos para que el mapeador funcione sobre el juego</div>
+        <div class="perm-btns">
+          <button class="perm-btn orange" onclick="reqOverlay()">Superposición</button>
+          <button class="perm-btn blue" onclick="reqAccess()">Accesibilidad</button>
+        </div>
+      </div>
+      <div class="games-hd">
+        <h2>Mis juegos:</h2>
+        <button class="add-btn" onclick="navTo('AddGame')">+</button>
+      </div>
+      <div id="myGamesList">
+        <div class="game-row">
+          <div class="game-ico" style="background:linear-gradient(135deg,#1565c0,#0d47a1)">🔥</div>
+          <div class="game-info">
+            <div class="game-name">Free Fire MAX</div>
+            <div class="game-ver">2.123.1</div>
+          </div>
+          <button class="iniciar-btn" onclick="iniciarJuego('com.dts.freefiremax',event)">Iniciar</button>
+        </div>
+        <div class="game-row">
+          <div class="game-ico" style="background:linear-gradient(135deg,#1565c0,#0d47a1)">🔥</div>
+          <div class="game-info">
+            <div class="game-name">Free Fire</div>
+            <div class="game-ver">1.123.1</div>
+          </div>
+          <button class="iniciar-btn" onclick="iniciarJuego('com.dts.freefireth',event)">Iniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGREGAR JUEGO -->
+    <div class="page" id="pgAddGame">
+      <div id="appListEl"><div style="padding:20px;text-align:center;color:#999">Cargando apps...</div></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div class="page" id="pgEditor">
+      <div class="editor-bar">
+        <div class="eb-item" onclick="salirEditor()"><span class="eb-ico">↩</span><span class="eb-lbl">Salir</span></div>
+        <div class="eb-item" onclick="toggleLock()"><span class="eb-ico" id="lockIco">🔓</span><span class="eb-lbl" id="lockLbl">Desenfocar</span></div>
+        <div class="eb-item" onclick="showTypeMenu()"><span class="eb-ico">⊕</span><span class="eb-lbl">Agregar</span></div>
+        <div class="eb-item" onclick="showKeyModal(null,'assign')"><span class="eb-ico">⌨</span><span class="eb-lbl">Asignación<br>de teclas</span></div>
+        <div class="eb-item" onclick="resetKeys()"><span class="eb-ico">↺</span><span class="eb-lbl">Restablecer</span></div>
+        <div class="eb-item" onclick="guardarLayout()"><span class="eb-ico">💾</span><span class="eb-lbl">Guardar</span></div>
+      </div>
+      <div class="slot-bar">
+        <span class="slot-item" id="slotName">Slot0</span>
+        <span class="slot-item">-1111</span>
+        <span class="slot-item" id="slotState">De pie</span>
+      </div>
+      <div class="editor-canvas" id="edCanvas"></div>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="page" id="pgProfile">
+      <div class="profile-hd">
+        <div class="profile-av">👤</div>
+        <div class="profile-name">Mi Perfil</div>
+        <div class="profile-sub">GG Gaming v2.3.4</div>
+      </div>
+      <div class="prow" onclick="showBlueModal()"><span class="prow-ico">⚙️</span><span class="prow-lbl">Configuración</span><span class="prow-arr">›</span></div>
+      <div class="prow" onclick="showKeyModal(null,'lock')"><span class="prow-ico">🔒</span><span class="prow-lbl">Tecla bloqueo cursor</span><span class="prow-val" id="lockKeyDisp">F9</span><span class="prow-arr">›</span></div>
+      <div class="prow"><span class="prow-ico">🖱️</span><span class="prow-lbl">Sensibilidad mouse</span><span class="prow-arr">›</span></div>
+      <div class="prow" onclick="reqAccess()"><span class="prow-ico">♿</span><span class="prow-lbl">Servicio accesibilidad</span><span class="prow-val" id="accessStat">Inactivo</span><span class="prow-arr">›</span></div>
+      <div class="prow" onclick="reqOverlay()"><span class="prow-ico">📱</span><span class="prow-lbl">Permiso superposición</span><span class="prow-val" id="overlayStat">Inactivo</span><span class="prow-arr">›</span></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="page" id="pgConfig">
+      <div class="cfg-section">
+        <div class="cfg-title">Mouse OTG</div>
+        <div class="cfg-row"><div class="cfg-ico blue">⌨️</div><div class="cfg-lbl"><div class="cfg-name">Teclado USB</div><div class="cfg-sub">HID Keyboard · OTG</div></div><span class="cfg-val" id="kbStat">Conectado</span></div>
+        <div class="cfg-row"><div class="cfg-ico green">🖱️</div><div class="cfg-lbl"><div class="cfg-name">Mouse USB</div><div class="cfg-sub">HID Mouse · OTG</div></div><span class="cfg-val" id="msStat" style="color:#999">Desconectado</span></div>
+        <div class="cfg-title">Sensibilidad</div>
+        <div class="cfg-row"><div class="cfg-ico blue">🎯</div><div class="cfg-lbl"><div class="cfg-name">General</div></div><input type="range" min="1" max="100" value="55" oninput="this.nextElementSibling.textContent=this.value"><span class="cfg-val">55</span></div>
+        <div class="cfg-row"><div class="cfg-ico purple">🔭</div><div class="cfg-lbl"><div class="cfg-name">ADS / Mira</div></div><input type="range" min="1" max="100" value="40" oninput="this.nextElementSibling.textContent=this.value"><span class="cfg-val">40</span></div>
+        <div class="cfg-row"><div class="cfg-ico orange">🎯</div><div class="cfg-lbl"><div class="cfg-name">Francotirador</div></div><input type="range" min="1" max="100" value="25" oninput="this.nextElementSibling.textContent=this.value"><span class="cfg-val">25</span></div>
+        <div class="cfg-row"><div class="cfg-ico green">🖱️</div><div class="cfg-lbl"><div class="cfg-name">DPI Mouse</div></div><input type="range" min="400" max="3200" value="1600" step="100" oninput="this.nextElementSibling.textContent=this.value"><span class="cfg-val" style="min-width:40px">1600</span></div>
+        <div class="cfg-title">General</div>
+        <div class="cfg-row"><div class="cfg-ico blue">🔒</div><div class="cfg-lbl"><div class="cfg-name">Tecla bloqueo cursor</div><div class="cfg-sub">Toggle libre/bloqueado</div></div><span class="cfg-val" id="cfgLockKey">F9</span></div>
+        <div class="cfg-row"><div class="cfg-ico orange">⏱️</div><div class="cfg-lbl"><div class="cfg-name">Delay de tecla</div><div class="cfg-sub">Ms entre pulsaciones</div></div><input type="range" min="1" max="50" value="8" oninput="this.nextElementSibling.textContent=this.value+'ms'"><span class="cfg-val">8ms</span></div>
+        <div class="cfg-row"><div class="cfg-ico purple">📳</div><div class="cfg-lbl"><div class="cfg-name">Vibración</div></div><button class="tog on" onclick="this.classList.toggle('on')"></button></div>
+        <div class="cfg-row"><div class="cfg-ico green">🚀</div><div class="cfg-lbl"><div class="cfg-name">Inicio automático</div></div><button class="tog" onclick="this.classList.toggle('on')"></button></div>
+        <div class="cfg-row"><div class="cfg-ico blue">🎮</div><div class="cfg-lbl"><div class="cfg-name">Click izquierdo</div><div class="cfg-sub">Acción mouse</div></div><span class="cfg-val">DISPARAR</span></div>
+        <div class="cfg-row"><div class="cfg-ico orange">🎯</div><div class="cfg-lbl"><div class="cfg-name">Click derecho</div><div class="cfg-sub">Acción mouse</div></div><span class="cfg-val">ADS/MIRA</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottomnav" id="bnav">
+    <div class="bn-btn-wrap">
+      <div class="bn-pill" onclick="navTo('Games')">🎮 Página pri...</div>
+    </div>
+    <div class="bn-icon-item" onclick="navTo('Profile')"><div class="bn-ico">👤</div></div>
+    <div class="bn-icon-item" onclick="navTo('Config')"><div class="bn-ico">⊞</div></div>
+  </div>
+</div>
+
+<!-- TYPE MENU -->
+<div class="type-menu" id="typeMenu" onclick="hideTypeMenu()">
+  <div class="type-box" onclick="event.stopPropagation()">
+    <div class="type-grid">
+      <div class="type-item" onclick="addKey('tap')"><div class="ti-ico">👆</div><div class="ti-lbl">Tocar</div></div>
+      <div class="type-item" onclick="addKey('swipe')"><div class="ti-ico">👈</div><div class="ti-lbl">Deslizar</div></div>
+      <div class="type-item" onclick="addKey('mouse')"><div class="ti-ico">🖱️</div><div class="ti-lbl">Desplazamiento<br>del mouse</div></div>
+      <div class="type-item" onclick="addKey('macro')"><div class="ti-ico">⚡</div><div class="ti-lbl">Macro</div></div>
+      <div class="type-item" onclick="addKey('joy')"><div class="ti-ico">🕹️</div><div class="ti-lbl">Joystick</div></div>
+      <div class="type-item" onclick="addKey('fps')"><div class="ti-ico">🎯</div><div class="ti-lbl">Vista FPS</div></div>
+      <div class="type-item" onclick="addKey('free')"><div class="ti-ico">👁️</div><div class="ti-lbl">Vista libre</div></div>
+      <div class="type-item" onclick="hideTypeMenu()"><div class="ti-ico" style="font-size:14px">•••</div><div class="ti-lbl">Más</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- KEY MODAL -->
+<div class="key-modal" id="keyModal">
+  <div class="km-box">
+    <div class="km-handle"></div>
+    <div class="km-title">Asignar Tecla</div>
+    <div class="km-sub" id="kmSub">Presiona una tecla del teclado OTG</div>
+    <div class="km-key" id="kmKey">?</div>
+    <div class="km-btns">
+      <button class="km-btn no" onclick="closeKeyModal()">Cancelar</button>
+      <button class="km-btn ok" onclick="confirmKey()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BLUE CONFIG MODAL -->
+<div class="blue-modal" id="blueModal">
+  <div style="position:relative">
+    <div class="blue-box">
+      <div class="blue-title">Configuración</div>
+      <div class="blue-item" onclick="closeBlueModal()"><span>Configuración básica</span><div class="blue-arr">›</div></div>
+      <div class="blue-item" onclick="closeBlueModal()"><span>Configuración del monitor de información del dispositivo</span><div class="blue-arr">›</div></div>
+      <div class="blue-item" onclick="closeBlueModal()"><span>Configuración general de control de retroceso</span><div class="blue-arr">›</div></div>
+      <div class="blue-item" onclick="closeBlueModal()"><span>Configuración de la mira</span><div class="blue-arr">›</div></div>
+      <div class="blue-item" onclick="closeBlueModal()"><span>Configuración de la herramienta de ajuste de tamaño de pantalla</span><div class="blue-arr">›</div></div>
+    </div>
+    <div class="blue-close" onclick="closeBlueModal()">✕</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let currentPage='Games',lockKey='F9',capturedKey=null;
+let modalTarget=null,modalMode='button';
+let cursorLocked=false,mapperOn=false;
+let drag=null,dOff={x:0,y:0},keyId=100;
+const mapKeys=[];
+
+const defaultKeys=[
+  {id:1,lbl:'G',key:'G',x:4,y:40,type:'tap'},
+  {id:2,lbl:'G',key:'G',x:4,y:58,type:'tap'},
+  {id:3,lbl:'C',key:'C',x:33,y:13,type:'tap'},
+  {id:4,lbl:'6',key:'6',x:60,y:78,type:'tap'},
+  {id:5,lbl:'TAB',key:'Tab',x:79,y:63,type:'tap'},
+  {id:6,lbl:'Ver',key:'V',x:70,y:66,type:'tap'},
+  {id:7,lbl:'F',key:'F',x:76,y:74,type:'tap'},
+  {id:8,lbl:'B',key:'B',x:93,y:55,type:'tap'},
+  {id:9,lbl:'V',key:'V',x:84,y:79,type:'tap'},
+  {id:10,lbl:'1',key:'1',x:90,y:50,type:'tap'},
+  {id:11,lbl:'3',key:'3',x:95,y:50,type:'tap'},
+  {id:12,lbl:'G',key:'G',x:95,y:40,type:'tap'},
+  {id:13,lbl:'Espacio',key:'Space',x:58,y:88,type:'tap'},
+  {id:14,lbl:'Despl-U',key:'U',x:68,y:88,type:'tap'},
+  {id:15,lbl:'Despl-D',key:'D',x:93,y:63,type:'tap'},
+  {id:16,lbl:'BloqMay',key:'CapsLock',x:93,y:88,type:'tap'},
+  {id:17,lbl:'Macro',key:'M1',x:15,y:60,type:'macro'},
+  {id:18,lbl:'Macro',key:'M2',x:28,y:60,type:'macro'},
+  {id:19,lbl:'Macro',key:'M3',x:22,y:68,type:'macro'},
+  {id:20,lbl:'Macro',key:'M4',x:54,y:64,type:'macro'},
+  {id:21,lbl:'L-Mayús',key:'Shift',x:18,y:35,type:'tap'},
+];
+
+// ── NAV ──
+function navTo(page){
+  currentPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.getElementById('pg'+page).classList.add('show');
+  const titles={Games:'GG Gaming',AddGame:'Agregar juego',Editor:'Editor',Profile:'Perfil',Config:'Configuración'};
+  document.getElementById('topTitle').textContent=titles[page]||'GG Gaming';
+  document.getElementById('topBack').style.display=['AddGame','Editor'].includes(page)?'block':'none';
+  document.getElementById('topRight').style.display=page==='AddGame'?'block':'none';
+  document.getElementById('bnav').style.display=page==='Editor'?'none':'flex';
+  if(page==='AddGame')loadApps();
+  if(page==='Editor')renderKeys();
+}
+function goBack(){
+  if(currentPage==='AddGame'||currentPage==='Editor') navTo('Games');
+}
+function topRightAct(){ navTo('Games'); }
+
+// ── PERMISSIONS ──
+function checkPerms(){
+  if(window.Android){
+    const ov=Android.isOverlayEnabled();
+    const ac=Android.isAccessibilityEnabled();
+    document.getElementById('overlayStat').textContent=ov?'Activo':'Inactivo';
+    document.getElementById('overlayStat').style.color=ov?'#5c6bc0':'#ef5350';
+    document.getElementById('accessStat').textContent=ac?'Activo':'Inactivo';
+    document.getElementById('accessStat').style.color=ac?'#5c6bc0':'#ef5350';
+    if(!ov||!ac){
+      document.getElementById('permBanner').classList.add('show');
+      document.getElementById('permMsg').textContent=!ov?'Necesitas permiso de superposición':!ac?'Necesitas activar el servicio de accesibilidad':'';
+    } else {
+      document.getElementById('permBanner').classList.remove('show');
+    }
+  }
+}
+function reqOverlay(){ if(window.Android) Android.requestOverlay(); else showToast('Solo en Android'); }
+function reqAccess(){ if(window.Android) Android.requestAccessibility(); else showToast('Solo en Android'); }
+
+window.onPermissionStatus=function(data){
+  document.getElementById('overlayStat').textContent=data.overlay?'Activo':'Inactivo';
+  document.getElementById('overlayStat').style.color=data.overlay?'#5c6bc0':'#ef5350';
+  document.getElementById('accessStat').textContent=data.accessibility?'Activo':'Inactivo';
+  document.getElementById('accessStat').style.color=data.accessibility?'#5c6bc0':'#ef5350';
+  if(!data.overlay||!data.accessibility){
+    document.getElementById('permBanner').classList.add('show');
+  }
+};
+
+// ── LOAD APPS ──
+function loadApps(){
+  const el=document.getElementById('appListEl');
+  if(window.Android){
+    try{
+      const apps=JSON.parse(Android.getInstalledApps());
+      el.innerHTML=apps.map(a=>`
+        <div class="app-row">
+          <div class="app-ico">📱</div>
+          <span class="app-name">${a.name}</span>
+          <button class="agregar-btn" onclick="addGame('${a.name}','${a.pkg}',this)">Agregar</button>
+        </div>`).join('');
+    }catch(e){el.innerHTML='<div style="padding:20px;text-align:center;color:#999">Error cargando apps</div>';}
+  } else {
+    // Demo list
+    const demo=[
+      {name:'Free Fire MAX',pkg:'com.dts.freefiremax'},
+      {name:'PUBG Mobile',pkg:'com.pubg.mobile'},
+      {name:'Mobile Legends',pkg:'com.mobile.legends'},
+      {name:'Call of Duty Mobile',pkg:'com.activision.callofduty'},
+      {name:'Fortnite',pkg:'com.epicgames.fortnite'},
+      {name:'Roblox',pkg:'com.roblox.client'},
+      {name:'Minecraft',pkg:'com.mojang.minecraftpe'},
+      {name:'Genshin Impact',pkg:'com.miHoYo.GenshinImpact'},
+    ];
+    el.innerHTML=demo.map(a=>`
+      <div class="app-row">
+        <div class="app-ico">🎮</div>
+        <span class="app-name">${a.name}</span>
+        <button class="agregar-btn" onclick="addGame('${a.name}','${a.pkg}',this)">Agregar</button>
+      </div>`).join('');
+  }
+}
+
+function addGame(name,pkg,btn){
+  btn.textContent='✓ Agregado';btn.className='agregar-btn done';btn.disabled=true;
+  const list=document.getElementById('myGamesList');
+  const row=document.createElement('div');row.className='game-row';
+  row.innerHTML=`<div class="game-ico" style="background:linear-gradient(135deg,#5c6bc0,#3949ab)">🎮</div><div class="game-info"><div class="game-name">${name}</div><div class="game-ver">1.0.0</div></div><button class="iniciar-btn" onclick="iniciarJuego('${pkg}',event)">Iniciar</button>`;
+  list.appendChild(row);
+  showToast(`✓ ${name} agregado`);
+}
+
+// ── LAUNCH GAME ──
+function iniciarJuego(pkg,e){
+  if(e)e.stopPropagation();
+  showToast('🔥 Abriendo juego...');
+  if(window.Android) Android.launchApp(pkg);
+  else showToast('⚠️ Solo disponible en Android');
+}
+
+// ── EDITOR ──
+function salirEditor(){ navTo('Games'); }
+
+function toggleLock(){
+  cursorLocked=!cursorLocked;
+  document.getElementById('lockIco').textContent=cursorLocked?'🔒':'🔓';
+  document.getElementById('lockLbl').textContent=cursorLocked?'Bloquear':'Desenfocar';
+  if(window.Android) Android.setCursorLockKey(lockKey);
+  showToast(cursorLocked?'🔒 Mouse bloqueado':'🔓 Mouse libre');
+}
+
+function renderKeys(){
+  const cv=document.getElementById('edCanvas');
+  cv.querySelectorAll('.mk').forEach(e=>e.remove());
+  const keys=mapKeys.length>0?mapKeys:defaultKeys;
+  keys.forEach(k=>{
+    const el=document.createElement('div');
+    el.className='mk'+(k.type==='macro'?' macro':'');
+    el.id='mk'+k.id;
+    el.style.left=k.x+'%';
+    el.style.top=k.y+'%';
+    const del=document.createElement('button');
+    del.className='mk-del';del.textContent='✕';
+    del.onclick=(e)=>{e.stopPropagation();el.remove();};
+    el.appendChild(document.createTextNode(k.lbl));
+    el.appendChild(del);
+    el.addEventListener('click',()=>showKeyModal(k,'button'));
+    el.addEventListener('mousedown',e=>startDrag(e,k,el));
+    el.addEventListener('touchstart',e=>startDrag(e,k,el),{passive:false});
+    cv.appendChild(el);
+  });
+}
+
+function startDrag(e,obj,el){
+  e.preventDefault();e.stopPropagation();
+  const cv=document.getElementById('edCanvas');
+  const r=cv.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  drag={obj,el};
+  dOff.x=cx-r.left-(obj.x/100)*r.width;
+  dOff.y=cy-r.top-(obj.y/100)*r.height;
+}
+document.addEventListener('touchmove',e=>{if(!drag)return;e.preventDefault();doMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+document.addEventListener('mousemove',e=>{if(drag)doMove(e.clientX,e.clientY);});
+function doMove(cx,cy){
+  if(!drag)return;
+  const cv=document.getElementById('edCanvas');
+  const r=cv.getBoundingClientRect();
+  let x=Math.max(2,Math.min(97,((cx-r.left-dOff.x)/r.width)*100));
+  let y=Math.max(2,Math.min(96,((cy-r.top-dOff.y)/r.height)*100));
+  drag.obj.x=x;drag.obj.y=y;
+  drag.el.style.left=x+'%';drag.el.style.top=y+'%';
+}
+document.addEventListener('touchend',()=>{drag=null;});
+document.addEventListener('mouseup',()=>{drag=null;});
+
+function addKey(type){
+  hideTypeMenu();
+  const id=++keyId;
+  const lbls={tap:'G',swipe:'→',mouse:'🖱',macro:'Macro',joy:'🕹',fps:'FPS',free:'👁'};
+  const k={id,lbl:lbls[type]||'?',key:'?',x:30+Math.random()*40,y:30+Math.random()*40,type};
+  defaultKeys.push(k);
+  renderKeys();
+  showKeyModal(k,'button');
+}
+
+function resetKeys(){
+  if(!confirm('¿Restablecer mapa?'))return;
+  renderKeys();showToast('Mapa restablecido');
+}
+
+function guardarLayout(){
+  const data={keys:defaultKeys,lockKey};
+  if(window.Android){
+    Android.saveProfile(JSON.stringify(data));
+    Android.startOverlay(JSON.stringify(data));
+  }
+  showToast('💾 Layout guardado y overlay iniciado');
+}
+
+// ── KEY MODAL ──
+function showKeyModal(target,mode){
+  modalTarget=target;modalMode=mode;
+  if(mode==='lock'){
+    capturedKey=lockKey;
+    document.getElementById('kmSub').textContent='Presiona la tecla para bloquear/desbloquear el cursor';
+    document.getElementById('kmKey').textContent=lockKey;
+  } else if(target){
+    capturedKey=target.key||'?';
+    document.getElementById('kmSub').textContent=`Asignando tecla — botón: ${target.lbl}`;
+    document.getElementById('kmKey').textContent=target.key||'?';
+  } else {
+    capturedKey=null;
+    document.getElementById('kmSub').textContent='Presiona una tecla del teclado OTG';
+    document.getElementById('kmKey').textContent='?';
+  }
+  document.getElementById('keyModal').classList.add('show');
+}
+function closeKeyModal(){document.getElementById('keyModal').classList.remove('show');modalTarget=null;}
+function confirmKey(){
+  if(modalMode==='lock'&&capturedKey){
+    lockKey=capturedKey;
+    document.getElementById('lockKeyDisp').textContent=lockKey;
+    document.getElementById('cfgLockKey').textContent=lockKey;
+    showToast(`✓ Tecla bloqueo: ${lockKey}`);
+    if(window.Android)Android.setCursorLockKey(lockKey);
+  } else if(modalTarget&&capturedKey){
+    modalTarget.key=capturedKey;
+    modalTarget.lbl=capturedKey;
+    const el=document.getElementById('mk'+modalTarget.id);
+    if(el)el.firstChild.textContent=capturedKey;
+    showToast(`✓ Tecla: ${capturedKey}`);
+  }
+  closeKeyModal();
+}
+document.addEventListener('keydown',e=>{
+  const m={' ':'Space',Control:'Ctrl',Shift:'Shift',Alt:'Alt',Enter:'Enter',Backspace:'Back',Escape:'Esc',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
+  const lbl=m[e.key]||e.key.toUpperCase();
+  if(document.getElementById('keyModal').classList.contains('show')){e.preventDefault();capturedKey=lbl;document.getElementById('kmKey').textContent=lbl;return;}
+  if(lbl===lockKey){toggleLock();return;}
+  // trigger mapped key
+  const k=defaultKeys.find(x=>x.key.toUpperCase()===lbl);
+  if(k&&window.Android)Android.performTouch(k.x,k.y);
+});
+
+// ── TYPE MENU ──
+function showTypeMenu(){document.getElementById('typeMenu').classList.add('show');}
+function hideTypeMenu(){document.getElementById('typeMenu').classList.remove('show');}
+
+// ── BLUE MODAL ──
+function showBlueModal(){document.getElementById('blueModal').classList.add('show');}
+function closeBlueModal(){document.getElementById('blueModal').classList.remove('show');}
+
+// ── OTG BRIDGE ──
+window.onOtgKey=function(data){
+  const m={' ':'Space',CTRL_LEFT:'Ctrl',SHIFT_LEFT:'Shift',SHIFT_RIGHT:'Shift'};
+  const lbl=m[data.keyChar]||data.keyChar;
+  if(lbl===lockKey){toggleLock();return;}
+  if(document.getElementById('keyModal').classList.contains('show')){capturedKey=lbl;document.getElementById('kmKey').textContent=lbl;return;}
+  const k=defaultKeys.find(x=>x.key.toUpperCase()===lbl.toUpperCase());
+  if(k){
+    const el=document.getElementById('mk'+k.id);
+    if(el){el.classList.add('selected');setTimeout(()=>el&&el.classList.remove('selected'),150);}
+    if(window.Android)Android.performTouch(k.x,k.y);
+  }
+};
+window.onOtgMouse=function(data){
+  if(cursorLocked&&window.Android){
+    // Mouse moves camera
+    Android.performTouch(data.x,data.y);
+  }
+};
+window.onOtgStatus=function(data){
+  document.getElementById('kbStat').textContent=data.keyboard?'Conectado':'Desconectado';
+  document.getElementById('kbStat').style.color=data.keyboard?'#5c6bc0':'#999';
+  document.getElementById('msStat').textContent=data.mouse?'Conectado':'Desconectado';
+  document.getElementById('msStat').style.color=data.mouse?'#5c6bc0':'#999';
+};
+
+// ── TOAST ──
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);}
+window.showToast=showToast;
+
+// ── INIT ──
+(function(){
+  try{
+    const saved=window.Android?Android.loadProfile():localStorage.getItem('gg_profile');
+    if(saved){const p=JSON.parse(saved);if(p.lockKey)lockKey=p.lockKey;document.getElementById('lockKeyDisp').textContent=lockKey;document.getElementById('cfgLockKey').textContent=lockKey;}
+  }catch(e){}
+  checkPerms();
+})();
+</script>
+</body>
+</html>
