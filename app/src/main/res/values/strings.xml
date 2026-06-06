@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GG Gaming</string>
+    <string name="accessibility_service_label">GG Gaming Mapper</string>
+    <string name="accessibility_service_description">Permite a GG Gaming controlar toques en pantalla para mapear el teclado y mouse OTG al juego</string>
+    <string name="overlay_permission_title">Permiso de superposición</string>
+    <string name="overlay_permission_msg">GG Gaming necesita permiso para mostrar controles encima del juego</string>
+    <string name="accessibility_permission_title">Permiso de accesibilidad</string>
+    <string name="accessibility_permission_msg">GG Gaming necesita el servicio de accesibilidad para controlar los toques en el juego</string>
+</resources>
