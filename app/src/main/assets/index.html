@@ -431,9 +431,25 @@ function addGame(name,pkg,btn){
 // ── LAUNCH GAME ──
 function iniciarJuego(pkg,e){
   if(e)e.stopPropagation();
-  showToast('🔥 Abriendo juego...');
-  if(window.Android) Android.launchApp(pkg);
-  else showToast('⚠️ Solo disponible en Android');
+  if(!window.Android){showToast('⚠️ Solo en Android');return;}
+
+  // Check permissions first
+  if(!Android.isOverlayEnabled()){
+    showToast('⚠️ Activa el permiso de superposición primero');
+    Android.requestOverlay();
+    return;
+  }
+
+  showToast('🔥 Iniciando mapeador...');
+
+  // Save current profile and start overlay BEFORE launching game
+  const profile = Android.loadProfile();
+  Android.startOverlay(profile);
+
+  // Launch game after short delay so overlay loads first
+  setTimeout(()=>{
+    Android.launchApp(pkg);
+  }, 800);
 }
 
 // ── EDITOR ──
