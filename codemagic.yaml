@@ -8,10 +8,12 @@ workflows:
     scripts:
       - name: Compilar APK Debug
         script: |
-          gradle assembleDebug --stacktrace --info 2>&1 | grep -A 5 "error:" || gradle assembleDebug --stacktrace 2>&1 | tail -50
+          gradle assembleDebug --stacktrace
+          echo "=== Buscando APK ==="
+          find . -name "*.apk" -type f
 
     artifacts:
-      - app/build/outputs/apk/debug/*.apk
+      - "**/*.apk"
 
     publishing:
       email:
