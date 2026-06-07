@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- USB HID Keyboard -->
+    <usb-device class="3" subclass="1" protocol="1" />
+    <!-- USB HID Mouse -->
+    <usb-device class="3" subclass="1" protocol="2" />
+    <!-- Generic HID -->
+    <usb-device class="3" />
+</resources>
