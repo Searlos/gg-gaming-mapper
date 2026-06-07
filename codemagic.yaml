@@ -1,0 +1,22 @@
+workflows:
+  android-debug:
+    name: GG Gaming Mapper — Debug APK
+    max_build_duration: 60
+    environment:
+      java: 11
+
+    scripts:
+      - name: Compilar APK Debug
+        script: |
+          gradle assembleDebug --stacktrace --warning-mode all
+
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - tu@email.com
+        notify:
+          success: true
+          failure: true
