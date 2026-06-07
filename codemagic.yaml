@@ -3,25 +3,21 @@ workflows:
     name: GG Gaming Mapper — Debug APK
     max_build_duration: 60
     environment:
-      java: 11
+      java: 17
 
     scripts:
       - name: Compilar APK Debug
         script: |
-          gradle assembleDebug --stacktrace
+          gradle assembleDebug --warning-mode all
 
       - name: Copiar APK
         script: |
           mkdir -p $CM_BUILD_DIR/outputs
           find . -name "*.apk" -exec cp {} $CM_BUILD_DIR/outputs/ \;
-          echo "APKs encontrados:"
           ls -la $CM_BUILD_DIR/outputs/
 
     artifacts:
       - $CM_BUILD_DIR/outputs/*.apk
-      - $HOME/outputs/*.apk
-      - build/outputs/**/*.apk
-      - app/build/outputs/**/*.apk
 
     publishing:
       email:
