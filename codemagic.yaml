@@ -9,11 +9,19 @@ workflows:
       - name: Compilar APK Debug
         script: |
           gradle assembleDebug --stacktrace
-          echo "=== Buscando APK ==="
-          find . -name "*.apk" -type f
+
+      - name: Copiar APK
+        script: |
+          mkdir -p $CM_BUILD_DIR/outputs
+          find . -name "*.apk" -exec cp {} $CM_BUILD_DIR/outputs/ \;
+          echo "APKs encontrados:"
+          ls -la $CM_BUILD_DIR/outputs/
 
     artifacts:
-      - "**/*.apk"
+      - $CM_BUILD_DIR/outputs/*.apk
+      - $HOME/outputs/*.apk
+      - build/outputs/**/*.apk
+      - app/build/outputs/**/*.apk
 
     publishing:
       email:
