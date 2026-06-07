@@ -8,7 +8,7 @@ workflows:
     scripts:
       - name: Compilar APK Debug
         script: |
-          gradle assembleDebug --stacktrace --warning-mode all
+          gradle assembleDebug --stacktrace --info 2>&1 | grep -A 5 "error:" || gradle assembleDebug --stacktrace 2>&1 | tail -50
 
     artifacts:
       - app/build/outputs/apk/debug/*.apk
