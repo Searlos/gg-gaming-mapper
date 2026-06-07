@@ -160,19 +160,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun startOverlay(profileJson: String) {
-            if (!Settings.canDrawOverlays(this@MainActivity)) {
-                requestOverlayPermission()
-                return
-            }
-            try {
-                val intent = Intent(this@MainActivity, OverlayService::class.java)
-                intent.putExtra("profile", profileJson)
+fun startOverlay(profileJson: String) {
+    if (!Settings.canDrawOverlays(this@MainActivity)) {
+        handler.post { requestOverlayPermission() }
+        return
+    }
+    handler.post {
+        try {
+            // Stop any existing overlay first
+            stopService(Intent(this@MainActivity, OverlayService::class.java))
+            // Start fresh
+            val intent = Intent(this@MainActivity, OverlayService::class.java)
+            intent.putExtra("profile", profileJson)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
                 startService(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+    }
+}
 
         @JavascriptInterface
         fun stopOverlay() {
