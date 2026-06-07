@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +16,7 @@ import android.view.MotionEvent
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.gg.gaming.mapper.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -27,7 +29,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val OVERLAY_PERMISSION_REQUEST = 1001
-        const val ACCESSIBILITY_REQUEST = 1002
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,42 +37,24 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setupWebView()
         webView.loadUrl("file:///android_asset/index.html")
-        checkPermissions()
+        handler.postDelayed({ checkPermissions() }, 1500)
     }
 
     private fun checkPermissions() {
-        // Check overlay permission
-        if (!Settings.canDrawOverlays(this)) {
-            handler.postDelayed({
-                val js = "if(window.onPermissionStatus) window.onPermissionStatus({overlay:false,accessibility:false});"
-                webView.evaluateJavascript(js, null)
-            }, 1500)
-        } else {
-            checkAccessibility()
-        }
-    }
-
-    private fun checkAccessibility(): Boolean {
-        val enabled = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        )?.contains(packageName) == true
-        val js = "if(window.onPermissionStatus) window.onPermissionStatus({overlay:true,accessibility:$enabled});"
+        val overlay = Settings.canDrawOverlays(this)
+        val accessibility = isAccessibilityEnabled()
+        val js = "if(window.onPermissionStatus) window.onPermissionStatus({overlay:$overlay,accessibility:$accessibility});"
         webView.evaluateJavascript(js, null)
-        return enabled
     }
 
-    private fun requestOverlayPermission() {
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:$packageName")
-        )
-        startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
-    }
-
-    private fun requestAccessibilityPermission() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        startActivity(intent)
+    private fun isAccessibilityEnabled(): Boolean {
+        return try {
+            val enabled = Settings.Secure.getString(
+                contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            enabled?.contains(packageName) == true
+        } catch (e: Exception) { false }
     }
 
     private fun setupWebView() {
@@ -90,17 +73,13 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(Bridge(), "Android")
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                injectDeviceStatus()
+                val js = "if(window.onOtgStatus) window.onOtgStatus({keyboard:true,mouse:false});"
+                webView.evaluateJavascript(js, null)
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(m: ConsoleMessage?) = true
         }
-    }
-
-    private fun injectDeviceStatus() {
-        val js = "if(window.onOtgStatus) window.onOtgStatus({keyboard:true,mouse:false});"
-        webView.evaluateJavascript(js, null)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -118,36 +97,65 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchGenericMotionEvent(event)
     }
 
+    override fun onResume() {
+        super.onResume()
+        handler.postDelayed({ checkPermissions() }, 500)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == OVERLAY_PERMISSION_REQUEST) {
+            handler.postDelayed({ checkPermissions() }, 500)
+        }
+    }
+
     inner class Bridge {
 
         @JavascriptInterface
         fun getInstalledApps(): String {
-            val pm = packageManager
-            val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            val result = apps
-                .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
-                .map { app ->
-                    mapOf(
-                        "name" to (pm.getApplicationLabel(app).toString()),
-                        "pkg" to app.packageName
-                    )
+            return try {
+                val pm = packageManager
+                val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    PackageManager.GET_META_DATA
+                } else {
+                    PackageManager.GET_META_DATA
                 }
-                .sortedBy { it["name"] }
-            return gson.toJson(result)
+                val apps = pm.getInstalledApplications(flag)
+                val result = apps
+                    .filter { app ->
+                        // Include apps that are launchable
+                        pm.getLaunchIntentForPackage(app.packageName) != null &&
+                        app.packageName != packageName
+                    }
+                    .map { app ->
+                        mapOf(
+                            "name" to pm.getApplicationLabel(app).toString(),
+                            "pkg" to app.packageName
+                        )
+                    }
+                    .sortedBy { it["name"] as String }
+                gson.toJson(result)
+            } catch (e: Exception) {
+                "[]"
+            }
         }
 
         @JavascriptInterface
         fun launchApp(pkg: String) {
-            val intent = packageManager.getLaunchIntentForPackage(pkg)
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
-            } else {
-                handler.post {
-                    webView.evaluateJavascript(
-                        "if(window.showToast) window.showToast('App no encontrada');", null
-                    )
+            try {
+                val intent = packageManager.getLaunchIntentForPackage(pkg)
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    startActivity(intent)
+                } else {
+                    handler.post {
+                        webView.evaluateJavascript(
+                            "if(window.showToast) window.showToast('App no encontrada');", null
+                        )
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
@@ -157,14 +165,22 @@ class MainActivity : AppCompatActivity() {
                 requestOverlayPermission()
                 return
             }
-            val intent = Intent(this@MainActivity, OverlayService::class.java)
-            intent.putExtra("profile", profileJson)
-            startService(intent)
+            try {
+                val intent = Intent(this@MainActivity, OverlayService::class.java)
+                intent.putExtra("profile", profileJson)
+                startService(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         @JavascriptInterface
         fun stopOverlay() {
-            stopService(Intent(this@MainActivity, OverlayService::class.java))
+            try {
+                stopService(Intent(this@MainActivity, OverlayService::class.java))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         @JavascriptInterface
@@ -174,16 +190,14 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun requestAccessibility() {
-            handler.post { requestAccessibilityPermission() }
+            handler.post {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
         }
 
         @JavascriptInterface
         fun isAccessibilityEnabled(): Boolean {
-            val enabled = Settings.Secure.getString(
-                contentResolver,
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-            )
-            return enabled?.contains(packageName) == true
+            return this@MainActivity.isAccessibilityEnabled()
         }
 
         @JavascriptInterface
@@ -222,19 +236,15 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun performTouch(x: Float, y: Float) {
-            GGAccessibilityService.instance?.performTouch(x, y)
+            GGAccessibilityService.instance?.performTouchPercent(x, y)
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == OVERLAY_PERMISSION_REQUEST) {
-            checkPermissions()
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        checkAccessibility()
+    private fun requestOverlayPermission() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName")
+        )
+        startActivityForResult(intent, OVERLAY_PERMISSION_REQUEST)
     }
 }
